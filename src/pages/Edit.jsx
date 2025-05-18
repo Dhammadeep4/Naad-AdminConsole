@@ -33,9 +33,6 @@ const Edit = () => {
     form.append("doj", doj);
     form.append("year", year);
 
-    for (var pair of form.entries()) {
-      console.log(pair[0] + ", " + pair[1]);
-    }
     e.preventDefault();
 
     const response = await axios.post(
@@ -44,6 +41,7 @@ const Edit = () => {
     );
     if (response.data.success === true) {
       toast.success(response.data.message);
+      navigate("/view");
     } else {
       toast.error(response.data.message);
     }
@@ -67,7 +65,6 @@ const Edit = () => {
       setDOJ(user.doj);
       setYear(user.year);
     } catch (error) {
-      console.log(error.message);
       toast.error(error.message);
     }
   };
@@ -76,7 +73,7 @@ const Edit = () => {
   }, []);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-pink-100 to-red-200">
       <div className="w-full max-w-lg bg-white p-6 rounded-2xl shadow-xl">
         <button
           onClick={() => navigate(-1)}

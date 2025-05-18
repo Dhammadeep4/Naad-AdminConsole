@@ -16,7 +16,6 @@ const Profile = () => {
   // Fetch user profile
   const fetchProfile = async () => {
     try {
-      console.log("studentID:" + studentId);
       const response = await axios.get(
         backendUrl + `/api/admin/studentProfile/${studentId}`
       );
@@ -69,6 +68,8 @@ const Profile = () => {
       if (response.data.success) {
         setCredsFlag(true);
         toast.success(response.data.success);
+        await fetchProfile();
+        await checkCreds();
       } else {
         setCredsFlag(false);
         toast.error(response.data.message);
@@ -93,6 +94,8 @@ const Profile = () => {
         toast.success("Credentials reset successfully!");
         setUserId(username);
         setPwd(password);
+        await fetchProfile();
+        await checkCreds();
       } else {
         toast.error(response.data.message);
       }
@@ -109,12 +112,13 @@ const Profile = () => {
         backendUrl + `/api/admin/status/${studentId}`,
         { status: "inactive" }
       );
-      console.log(response);
+
       if (response.data.success) {
         toast.success("Changes status to inactive");
         setActiveFlag("false");
+        window.location.reload();
       } else {
-        console.log("failed to change status");
+        toast.error("Failed to change status");
       }
     } catch (error) {
       console.log(error.message);
@@ -128,10 +132,12 @@ const Profile = () => {
         backendUrl + `/api/admin/status/${studentId}`,
         { status: "active" }
       );
-      console.log(response);
+
       if (response.data.success) {
         toast.success("Changes status to active");
         setActiveFlag("true");
+        await fetchProfile();
+        await checkCreds();
       } else {
         console.log("failed to change status");
       }
@@ -140,73 +146,115 @@ const Profile = () => {
     }
   };
   useEffect(() => {
-    fetchProfile();
-    checkCreds();
+    const init = async () => {
+      await fetchProfile();
+      await checkCreds();
+    };
+    init();
   }, []);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-      <button
-        onClick={() => navigate(-1)}
-        className="text-blue-500 hover:underline mb-4"
-      >
-        ← Back
-      </button>
-      <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow-xl text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">User Details</h2>
-        <img
-          src={user.image}
-          alt="User"
-          className="w-32 h-32 mx-auto rounded-full mb-4"
-        />
-        <p className="text-lg font-semibold">
-          {user.firstname} {user.middlename} {user.lastname}
-        </p>
-        <p className="text-gray-600">Address: {user.address}</p>
-        <p className="text-gray-600">Contact: {user.contact}</p>
-        <p className="text-gray-600">DOB: {user.dob}</p>
-        <p className="text-gray-600">DOJ: {user.doj}</p>
-        <p className="text-gray-600">Year: {user.year}</p>
+    <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-200 p-4 flex flex-col items-center">
+      {/* Back Button */}
+      <div className="w-full max-w-4xl mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-blue-600 hover:underline text-sm"
+        >
+          ← Back
+        </button>
+      </div>
 
-        {/* Credentials Section */}
-        {credsFlag ? (
-          <div className="mt-4 p-4 bg-green-100 text-green-700 rounded-lg">
-            <p>
-              <strong>Username:</strong> {userId}
-            </p>
-            <p>
-              <strong>Password:</strong> {pwd}
-            </p>
-            <button
-              onClick={resetCreds}
-              className="mt-4 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg"
-            >
-              Reset Credentials
-            </button>
+      {/* User Card */}
+      <div className="w-full max-w-4xl bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-6 flex flex-col md:flex-row gap-6">
+        {/* Left Panel - Avatar and Buttons */}
+        <div className="md:w-1/3 flex flex-col items-center text-center gap-4">
+          <img
+            src={user.image}
+            alt="User"
+            className="w-32 h-32 rounded-full ring-4 ring-blue-300 object-cover shadow"
+          />
+          <h2 className="text-xl font-semibold text-gray-800">
+            {user.firstname} {user.middlename} {user.lastname}
+          </h2>
+
+          {/* Status Button */}
+          <div className="w-full">
+            {activeFlag ? (
+              <button
+                onClick={setInactive}
+                className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg mt-2"
+              >
+                Set Inactive
+              </button>
+            ) : (
+              <button
+                onClick={setActive}
+                className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg mt-2"
+              >
+                Set Active
+              </button>
+            )}
           </div>
-        ) : (
-          <button
-            onClick={generateCreds}
-            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg"
-          >
-            Generate Credentials
-          </button>
-        )}
-        {activeFlag ? (
-          <button
-            onClick={setInactive}
-            className="mt-4 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg"
-          >
-            Set Inactive
-          </button>
-        ) : (
-          <button
-            onClick={setActive}
-            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg"
-          >
-            Set Active
-          </button>
-        )}
+
+          {/* Credential Button */}
+          <div className="w-full">
+            {credsFlag ? (
+              <>
+                <div className="bg-green-100 p-2 rounded text-sm text-green-700">
+                  <p>
+                    <strong>Username:</strong> {userId}
+                  </p>
+                  <p>
+                    <strong>Password:</strong> {pwd}
+                  </p>
+                </div>
+                <button
+                  onClick={resetCreds}
+                  className="w-full mt-2 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg"
+                >
+                  Reset Credentials
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={generateCreds}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
+              >
+                Generate Credentials
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Right Panel - Details */}
+        <div className="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700 text-sm">
+          <div>
+            <strong>Address:</strong>
+            <br />
+            {user.address}
+          </div>
+          <div>
+            <strong>Contact:</strong>
+            <br />
+            {user.contact}
+          </div>
+          <div>
+            <strong>Date of Birth:</strong>
+            <br />
+            {user.dob}
+          </div>
+          <div>
+            <strong>Date of Joining:</strong>
+            <br />
+            {user.doj}
+          </div>
+          <div>
+            <strong>Academic Year:</strong>
+            <br />
+            {user.year}
+          </div>
+        </div>
       </div>
     </div>
   );
