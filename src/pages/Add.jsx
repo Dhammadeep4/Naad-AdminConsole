@@ -51,7 +51,7 @@ const Add = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-pink-100 to-red-200">
       <div className="w-full max-w-lg bg-white p-6 rounded-2xl shadow-xl">
         <button
           onClick={() => navigate("/home")}
@@ -79,6 +79,7 @@ const Add = () => {
               accept="image/*"
               onChange={(e) => setImage(e.target.files[0])}
               name="profileImage"
+              required
               className="p-3 border border-gray-300 rounded-lg w-full"
             />
           </div>
@@ -219,8 +220,14 @@ const Add = () => {
               <option value="Prarambhik">Prarambhik</option>
               <option value="Praveshika pratham">Praveshika pratham</option>
               <option value="Praveshika purna">Praveshika purna</option>
+              <option value="Praveshika purna batch1">
+                Praveshika purna Batch1
+              </option>
               <option value="Madhyama pratham">Madhyama pratham</option>
               <option value="Madhyama purna">Madhyama purna</option>
+              <option value="Madhyama purna batch1">
+                Madhyama purna Batch1
+              </option>
               <option value="Visharad pratham">Visharad pratham</option>
               <option value="Visharad purna">Visharad purna</option>
             </select>
