@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
+import axios from "axios";
 import { saveAs } from "file-saver";
-
+import { backendUrl } from "../App";
+import PaymentChart from "./PaymentChart";
 const Analytics = ({ paymentHistory, students, paymentRequests }) => {
   const [selectedMonth, setSelectedMonth] = useState("");
-
+  const [loading, setLoading] = useState(false); // Loader state
   const getMonthlyAnalytics = () => {
     const monthlyData = {};
 
@@ -45,83 +47,49 @@ const Analytics = ({ paymentHistory, students, paymentRequests }) => {
 
   const monthlyAnalytics = getMonthlyAnalytics();
 
-  const generateExcel = () => {
-    if (!students || students.length === 0) {
-      alert("Student data not loaded.");
-      return;
-    }
+  const getExcel = async () => {
     if (!selectedMonth) return;
+    setLoading(true); // Start loader
+    try {
+      const [year, month] = selectedMonth.split("-");
+      const selectedDate = new Date(year, parseInt(month) - 1);
+      const today = new Date();
+      today.setDate(1);
 
-    const [year, month] = selectedMonth.split("-");
-    const selectedDate = new Date(year, parseInt(month) - 1); // Month is 0-based
-    const today = new Date();
-    today.setDate(1); // Normalize to first of the month
+      if (selectedDate > today) {
+        alert("❌ Cannot generate Excel for a future month.");
+        setLoading(false);
+        return;
+      }
 
-    if (selectedDate > today) {
-      alert("❌ Cannot generate Excel for a future month.");
-      return;
-    }
-    const selectedMonthNum = parseInt(month);
-
-    // Get paid entries for selected month
-    const paidEntries = paymentHistory.filter((entry) => {
-      const date = new Date(entry.createdAt);
-      return (
-        date.getFullYear() === parseInt(year) &&
-        date.getMonth() + 1 === selectedMonthNum
-      );
-    });
-
-    const paidStudentIds = new Set(
-      paidEntries.map((entry) => entry.student_id)
-    );
-
-    // Prepare paid rows
-    const paidData = paidEntries.map((entry) => {
-      const student = students?.find(
-        (s) => String(s._id) === String(entry.student_id)
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `${backendUrl}/api/v1/getMonthHistory/${month}/${year}`,
+        {
+          responseType: "blob",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
-      return {
-        Name: `${student?.firstname || "Unknown"} ${student?.lastname || ""}`,
-        Year: student?.year || "-",
-        Amount: entry.amount || 0,
-        Mode: entry.mode || "Unknown",
-        Payment_ID: entry.payment_id || "-",
-        Date: new Date(entry.createdAt).toLocaleDateString(),
-        Remark: entry.remark,
-      };
-    });
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
 
-    // Prepare unpaid rows
-    const unpaidData =
-      students
-        ?.filter((student) => !paidStudentIds.has(student._id))
-        .map((student) => ({
-          Name: `${student.firstname} ${student.lastname}`,
-          Year: student.year || "-",
-          Amount: 0,
-          Mode: "Unpaid",
-          Payment_ID: "-",
-          Date: "-",
-          Remark: "Unpaid",
-        })) || [];
-
-    const finalData = [...paidData, ...unpaidData];
-
-    if (finalData.length === 0) {
-      alert("No records found for selected month.");
-      return;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `payments_${year}_${month}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error generating Excel report:", error);
+    } finally {
+      setLoading(false); // Stop loader
     }
-
-    // Generate Excel
-    const worksheet = XLSX.utils.json_to_sheet(finalData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Payments");
-
-    const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([buffer], { type: "application/octet-stream" });
-    saveAs(blob, `Payments_${selectedMonth}.xlsx`);
   };
 
   return (
@@ -143,15 +111,15 @@ const Analytics = ({ paymentHistory, students, paymentRequests }) => {
 
             <div className="relative flex items-center gap-2">
               <button
-                onClick={selectedMonth ? generateExcel : undefined}
-                disabled={!selectedMonth}
+                onClick={selectedMonth ? getExcel : undefined}
+                disabled={!selectedMonth || loading}
                 className={`px-5 py-2 rounded text-white font-medium transition ${
-                  selectedMonth
+                  selectedMonth && !loading
                     ? "bg-green-600 hover:bg-green-700"
                     : "bg-gray-400 cursor-not-allowed"
                 }`}
               >
-                📥 Download Excel
+                {loading ? "Please wait..." : "📥 Download Excel"}
               </button>
 
               {!selectedMonth && (
@@ -192,24 +160,7 @@ const Analytics = ({ paymentHistory, students, paymentRequests }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {monthlyAnalytics.map(({ monthYear, totalAmount, studentCount }) => (
-            <div
-              key={monthYear}
-              className="bg-blue-50 rounded-lg p-5 shadow hover:shadow-lg transition cursor-default"
-            >
-              <p className="text-lg font-semibold text-blue-900 mb-2">
-                {monthYear}
-              </p>
-              <p className="text-green-700 font-bold text-xl mb-1">
-                💰 ₹{totalAmount.toLocaleString()}
-              </p>
-              <p className="text-purple-700 font-medium text-md">
-                👥 Students: {studentCount}
-              </p>
-            </div>
-          ))}
-        </div>
+        <PaymentChart></PaymentChart>
       </div>
     </>
   );

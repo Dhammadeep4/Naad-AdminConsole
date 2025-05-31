@@ -16,35 +16,59 @@ const FeeForm = () => {
   const [madhyama_purna_batch1, setMadhyama_purna_batch1] = useState("");
   const [visharad_pratham, setVisharad_pratham] = useState("");
   const [visharad_purna, setVisharad_purna] = useState("");
-
+  const [loading, setLoading] = useState(false);
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const fees = {
-      registration,
-      chote_nartak,
-      prarambhik,
-      praveshika_pratham,
-      praveshika_purna,
-      praveshika_purna_batch1,
-      madhyama_pratham,
-      madhyama_purna,
-      madhyama_purna_batch1,
-      visharad_pratham,
-      visharad_purna,
-    };
-    // console.log("Logging Fees Structure", fees);
-
-    const response = await axios.post(backendUrl + "/api/fee/update", fees);
-    if (response.data.success === true) {
-      toast.success(response.data.message);
-    } else {
-      toast.error(response.data.message);
+    try {
+      e.preventDefault();
+      setLoading(true); // Disable button
+      const fees = {
+        registration,
+        chote_nartak,
+        prarambhik,
+        praveshika_pratham,
+        praveshika_purna,
+        praveshika_purna_batch1,
+        madhyama_pratham,
+        madhyama_purna,
+        madhyama_purna_batch1,
+        visharad_pratham,
+        visharad_purna,
+      };
+      // console.log("Logging Fees Structure", fees);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+      const response = await axios.post(backendUrl + "/api/fee/update", fees, {
+        headers: {
+          Authorization: `Bearer ${token}`, // 🔐 Include JWT token
+        },
+      });
+      if (response.data.success === true) {
+        toast.success(response.data.message);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.log("Error::", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchFees = async () => {
     try {
-      const response = await axios.get(backendUrl + `/api/fee/getFee`);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+      const response = await axios.get(backendUrl + `/api/fee/getFee`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // 🔐 Include JWT token
+        },
+      });
 
       // console.log(response.data.fees);
       if (response.data.success) {
@@ -205,12 +229,16 @@ const FeeForm = () => {
               className="w-full p-2 border rounded mt-1"
             />
           </label>
-
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            disabled={loading}
+            className={`w-full text-white font-semibold p-3 rounded-lg ${
+              loading
+                ? "bg-blue-300 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600"
+            }`}
           >
-            Submit
+            {loading ? "Submitting..." : "Submit"}
           </button>
         </form>
       </div>

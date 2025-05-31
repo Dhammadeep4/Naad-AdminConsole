@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 const Add = () => {
   const navigate = useNavigate();
   const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -24,6 +25,7 @@ const Add = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // Disable button
 
     const form = new FormData();
     if (image) form.append("image", image);
@@ -37,16 +39,24 @@ const Add = () => {
     form.append("year", formData.year);
 
     try {
-      const response = await axios.post(backendUrl + "/api/admin/add", form);
+      const token = localStorage.getItem("token");
+      const response = await axios.post(backendUrl + "/api/admin/add", form, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       if (response.data.success === true) {
         toast.success(response.data.message);
-        navigate("/home"); // Or wherever you want to redirect
+        navigate("/home");
       } else {
         toast.error(response.data.message);
       }
     } catch (error) {
       toast.error("Something went wrong!");
       console.error(error);
+    } finally {
+      setLoading(false); // Re-enable button
     }
   };
 
@@ -235,9 +245,14 @@ const Add = () => {
 
           <button
             type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold p-3 rounded-lg"
+            disabled={loading}
+            className={`w-full text-white font-semibold p-3 rounded-lg ${
+              loading
+                ? "bg-blue-300 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600"
+            }`}
           >
-            Submit
+            {loading ? "Submitting..." : "Submit"}
           </button>
         </form>
       </div>

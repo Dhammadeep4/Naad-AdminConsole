@@ -3,51 +3,58 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../App";
-const LoginPage = ({ setUser }) => {
+const LoginPage = ({ setUser, setRole }) => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    const credentials = { username, password };
 
-    if (username === "Vishakha@Naad") {
-      const credentials = { username, password };
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/user/login`,
+        credentials
+      );
 
-      try {
-        const response = await axios.post(
-          `${backendUrl}/api/user/login`,
-          credentials
-        );
+      if (response.data.success) {
+        toast.success("Login successful! 🎉");
 
-        if (response.data.success) {
-          toast.success(response.data.message);
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-          setUser(response.data.user);
+        // Save token and user info in localStorage
+        localStorage.setItem("token", response.data.token); // 🔐 Save token
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("role", response.data.user.role);
+
+        setUser(response.data.user);
+        setRole(response.data.user.role);
+
+        // Navigate based on user role
+        if (response.data.user.role === "admin") {
           navigate("/home");
         } else {
-          toast.error(response.data.message || "Invalid credentials");
+          navigate("/studenthome");
         }
-      } catch (error) {
-        console.error("Login error:", error);
-
-        // Show appropriate error message depending on the error type
-        if (error.response) {
-          // Server responded with a status other than 2xx
-          toast.error(
-            error.response.data.message ||
-              "Login failed. Please check your credentials."
-          );
-        } else if (error.request) {
-          // Request made but no response received
-          toast.error("No response from server. Please try again later.");
-        } else {
-          // Other errors
-          toast.error("An unexpected error occurred. Please try again.");
-        }
+      } else {
+        toast.error(response.data.message || "Invalid credentials");
       }
-    } else {
-      toast.error("You are not authorised to login.");
+    } catch (error) {
+      console.error("Login error:", error);
+
+      if (error.response) {
+        toast.error(
+          error.response.data.message ||
+            "Login failed. Please check your credentials."
+        );
+      } else if (error.request) {
+        toast.error("No response from server. Please try again later.");
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,13 +89,29 @@ const LoginPage = ({ setUser }) => {
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
+
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            disabled={loading}
+            className={`w-full text-white font-semibold p-3 rounded-lg ${
+              loading
+                ? "bg-blue-300 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600"
+            }`}
           >
-            Login Admin
+            {loading ? "Please wait..." : "Login"}
           </button>
         </form>
+
+        {/* Visit Site Homepage Link */}
+        <div className="mt-4 text-center">
+          <a
+            href="/"
+            className="text-pink-600 hover:text-pink-800 font-semibold"
+          >
+            Visit Site Homepage
+          </a>
+        </div>
       </div>
     </div>
   );

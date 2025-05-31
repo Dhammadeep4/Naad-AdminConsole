@@ -16,8 +16,14 @@ const Profile = () => {
   // Fetch user profile
   const fetchProfile = async () => {
     try {
+      const token = localStorage.getItem("token");
       const response = await axios.get(
-        backendUrl + `/api/admin/studentProfile/${studentId}`
+        backendUrl + `/api/admin/studentProfile/${studentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Add JWT token here
+          },
+        }
       );
       setUser(response.data.profile);
       if (response.data.profile.status == "active") {
@@ -193,35 +199,6 @@ const Profile = () => {
                 className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg mt-2"
               >
                 Set Active
-              </button>
-            )}
-          </div>
-
-          {/* Credential Button */}
-          <div className="w-full">
-            {credsFlag ? (
-              <>
-                <div className="bg-green-100 p-2 rounded text-sm text-green-700">
-                  <p>
-                    <strong>Username:</strong> {userId}
-                  </p>
-                  <p>
-                    <strong>Password:</strong> {pwd}
-                  </p>
-                </div>
-                <button
-                  onClick={resetCreds}
-                  className="w-full mt-2 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg"
-                >
-                  Reset Credentials
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={generateCreds}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
-              >
-                Generate Credentials
               </button>
             )}
           </div>

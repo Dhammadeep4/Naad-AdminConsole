@@ -7,6 +7,7 @@ import ActiveStudentsStatus from "../components/ActiveStudents";
 import Analytics from "../components/Analytics";
 import PaymentRequest from "../components/PaymentRequest";
 import PendingRequestsTable from "../components/PendingRequestTable";
+import HistoryTable from "../components/HistoryTable";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -19,14 +20,27 @@ const Dashboard = () => {
 
   const handleModalSubmit = async (data) => {
     try {
-      const res = await axios.post(`${backendUrl}/api/v1/paymentRequest`, {
-        student_id: data.student_id,
-        remark: data.remarks,
-        amount: data.amount,
-      });
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+      const res = await axios.post(
+        `${backendUrl}/api/v1/paymentRequest`,
+        {
+          student_id: data.student_id,
+          remark: data.remarks,
+          amount: data.amount,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // 🔐 Include JWT token
+          },
+        }
+      );
       if (res.data.success) {
         toast.success(res.data.message);
-        await fetchPaymentHistory();
+        await fetchPending();
       } else {
         toast.error(res.data.message || "Failed to create request");
       }
@@ -46,61 +60,63 @@ const Dashboard = () => {
       return null;
     }
   };
-
-  const fetchPaymentHistory = async () => {
+  const fetchStudents = async () => {
     try {
-      const response = await axios.get(`${backendUrl}/api/v1/getAllHistory`);
-      if (response.data.success) {
-        const pending = response.data.history.filter(
-          (item) => item.mode === "pending" && item.request === "pending"
-        );
-        setPaymentRequests(pending);
+      const token = localStorage.getItem("token");
 
-        const validPayments = response.data.history.filter(
-          (item) => !(item.mode === "pending" && item.request === "pending")
-        );
-        const sortedHistory = validPayments
-          .filter(
-            (entry) =>
-              typeof entry.remark === "string" &&
-              entry.remark.toLowerCase().includes("monthly fee")
-          )
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const res = await axios.get(
+        `${backendUrl}/api/admin/studentsLastHistory`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // 🔐 Include JWT token
+          },
+        }
+      );
 
-        setHistory(response.data.history);
-        setPaymentHistory(sortedHistory);
+      if (res.data.success) {
+        setStudents(res.data.students);
+      } else {
+        toast.error("Failed to fetch students");
+      }
+    } catch (error) {
+      toast.error("Error fetching students");
+      console.error(error);
+    }
+  };
+
+  const fetchPending = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await axios.get(`${backendUrl}/api/v1/getPending`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // 🔐 Include JWT token
+        },
+      });
+      if (res.data.success) {
+        setPaymentRequests(res.data.history);
       } else {
         toast.error("Failed to fetch payment history");
       }
     } catch {
-      toast.error("Error fetching payment history");
-    }
-  };
-
-  const fetchStudents = async () => {
-    try {
-      const res = await axios.get(`${backendUrl}/api/admin/students`);
-      if (res.data.success) {
-        const active = res.data.students.filter(
-          (student) => student.status === "active"
-        );
-        setStudents(active);
-      } else toast.error("Failed to fetch students");
-    } catch {
-      toast.error("Error fetching students");
+      toast.error("Error fetching pending requests");
     }
   };
 
   useEffect(() => {
     const init = async () => {
       await fetchStudents();
-      await fetchPaymentHistory();
+      await fetchPending();
       setLoading(false);
     };
     init();
   }, []);
-
-  if (loading) return <div className="text-center mt-10">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-pink-100 to-red-200">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-pink-600 border-solid"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-200 px-4 sm:px-6 py-4 overflow-x-hidden">
@@ -148,21 +164,20 @@ const Dashboard = () => {
       {/* Sections */}
       <div className="space-y-6 max-w-6xl mx-auto">
         <div className="overflow-x-auto rounded-xl bg-white p-4 shadow">
-          <ActiveStudentsStatus
+          {/* <ActiveStudentsStatus
             fetchProfile={fetchProfile}
             paymentHistory={paymentHistory}
             fetchPaymentHistory={fetchPaymentHistory}
             students={students}
             fetchStudents={fetchStudents}
-          />
+          /> */}
+          <HistoryTable students={students} />
         </div>
 
         <div className="overflow-x-auto rounded-xl bg-white p-4 shadow">
           <PendingRequestsTable
-            fetchProfile={fetchProfile}
             paymentRequests={paymentRequests}
             students={students}
-            onBypassSuccess={fetchPaymentHistory}
           />
         </div>
 
