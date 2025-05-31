@@ -1,130 +1,86 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { backendUrl } from "../App";
 import { toast } from "react-toastify";
-import jsPDF from "jspdf";
-import logo from "../assets/logo.jpeg";
+import { Fa0 } from "react-icons/fa6";
 
-const PendingRequestsTable = ({
-  fetchProfile,
-  paymentRequests,
-  students,
-  onBypassSuccess,
-}) => {
+const PendingRequestsTable = ({ paymentRequests, students }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [remarks, setRemarks] = useState("");
-  const [requestRemark, setRequestRemark] = useState("");
+  const [comments, setComments] = useState("");
   const [error, setError] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const entriesPerPage = 5;
 
   const studentMap = {};
   students.forEach((student) => {
     studentMap[student._id] = student;
   });
 
-  const enrichedRequests = paymentRequests.map((request) => ({
-    ...request,
-    student: studentMap[request.student_id] || {},
-  }));
-
-  const openModal = (id, reqRemark, amt) => {
+  const openModal = (id, amt, remark) => {
     setSelectedStudentId(id);
-    setRequestRemark(reqRemark);
-    setRemarks("");
+    setRemarks(remark);
+    setComments("");
     setAmount(amt);
     setError("");
     setShowModal(true);
   };
 
   const handleBypass = async (id) => {
-    if (!remarks.toLowerCase().includes("cash collected")) {
-      setError('Remarks must include "Cash Collected".');
+    if (!comments.toLowerCase().includes("cash collected")) {
+      setError('Comment must include "Cash Collected".');
       return;
     }
 
     setError("");
-    setLoading(true);
     try {
-      const profile = await fetchProfile(id);
-      if (!profile) {
-        setLoading(false);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Session expired. Please log in again.");
         return;
       }
-
-      const doc = new jsPDF("p", "mm", [120, 160]);
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = { top: 20, left: 15, right: 15 };
-
-      const imgWidth = 50;
-      const imgX = (pageWidth - imgWidth) / 2;
-      doc.addImage(logo, "JPEG", imgX, margin.top, imgWidth, 20);
-      doc.setFont("helvetica", "bold").setFontSize(22);
-      doc.text("Payment Receipt", margin.left, margin.top + 30);
-      doc
-        .setLineWidth(0.5)
-        .line(
-          margin.left,
-          margin.top + 35,
-          pageWidth - margin.right,
-          margin.top + 35
-        );
-
-      const table = [
+      const currentDate = new Date().toLocaleDateString();
+      const response = await axios.post(
+        `${backendUrl}/api/v1/updateDB`,
         {
-          label: "Student Name:",
-          value: `${profile.firstname} ${profile.lastname}`,
+          student_id: id,
+          payment_id: comments,
+          mode: "Cash",
+          remark: remarks,
+          amount: amount,
         },
-        { label: "Student Year:", value: profile.year },
-        { label: "Paid Amount:", value: amount },
-        { label: "Remark:", value: requestRemark },
-        { label: "Payment Mode:", value: "Cash" },
-      ];
-
-      let y = margin.top + 45;
-      doc.setFontSize(10).setFont("helvetica", "normal");
-      doc.text("Date:", pageWidth - 45, y);
-      doc.text(new Date().toLocaleDateString(), pageWidth - 25, y);
-      y += 10;
-
-      table.forEach((row) => {
-        doc.text(row.label, margin.left + 5, y);
-        doc.text(row.value, margin.left + 30, y);
-        y += 8;
-      });
-
-      doc.line(margin.left, y + 5, pageWidth - margin.right, y + 5);
-      doc.setFont("helvetica", "bold");
-      doc.text(
-        "**For any queries email to naadnrutya@gmail.com",
-        margin.left,
-        y + 20
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // 🔐 Include JWT token
+          },
+        }
       );
-      const pdfBase64 = doc.output("datauristring");
 
-      const res = await axios.post(`${backendUrl}/api/v1/updateDB`, {
-        student_id: id,
-        payment_id: remarks + ` for ${profile.firstname}`,
-        remark: remarks,
-        amount,
-        mode: "cash",
-        receipt: pdfBase64,
-      });
-
-      if (res.data.success) {
-        toast.success("Bypass successful!");
+      if (response.data.success) {
+        toast.success("Payments collection updated");
         setShowModal(false);
-        onBypassSuccess(); // Refresh the data
       } else {
-        toast.error("Bypass failed!");
+        toast.error("Payments collection not updated");
       }
     } catch (err) {
-      toast.error("Error while bypassing!");
-    } finally {
-      setLoading(false);
+      console.error("Update failed", err.message);
+      toast.error("Something went wrong.");
     }
   };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(paymentRequests.length / entriesPerPage);
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentEntries = paymentRequests.slice(
+    indexOfFirstEntry,
+    indexOfLastEntry
+  );
 
   return (
     <div className="mt-6 relative max-w-full px-2 sm:px-4 md:px-6 lg:px-0 mx-auto">
@@ -138,7 +94,7 @@ const PendingRequestsTable = ({
         </div>
       )}
 
-      {enrichedRequests.length === 0 ? (
+      {paymentRequests.length === 0 ? (
         <div className="p-4 bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-lg text-center sm:text-left">
           No pending payment requests found.
         </div>
@@ -148,22 +104,18 @@ const PendingRequestsTable = ({
             <thead className="bg-gray-100 text-left">
               <tr>
                 <th className="px-2 sm:px-4 py-2 border-b">Student Name</th>
-                <th className="px-2 sm:px-4 py-2 border-b">Contact</th>
                 <th className="px-2 sm:px-4 py-2 border-b">Amount</th>
                 <th className="px-2 sm:px-4 py-2 border-b">Remarks</th>
-                <th className="px-2 sm:px-4 py-2 border-b">Payment ID</th>
                 <th className="px-2 sm:px-4 py-2 border-b">Requested On</th>
+                <th className="px-2 sm:px-4 py-2 border-b">Action</th>
               </tr>
             </thead>
             <tbody>
-              {enrichedRequests.map((request, idx) => (
+              {currentEntries.map((request, idx) => (
                 <tr key={idx} className="hover:bg-gray-50">
                   <td className="px-2 sm:px-4 py-2 border-b whitespace-nowrap">
-                    {request.student.firstname || "N/A"}{" "}
-                    {request.student.lastname || ""}
-                  </td>
-                  <td className="px-2 sm:px-4 py-2 border-b whitespace-nowrap">
-                    {request.student.contact || "N/A"}
+                    {request.student_id.firstname || "N/A"}{" "}
+                    {request.student_id.lastname || ""}
                   </td>
                   <td className="px-2 sm:px-4 py-2 border-b whitespace-nowrap">
                     ₹{request.amount}
@@ -175,47 +127,77 @@ const PendingRequestsTable = ({
                     {request.remark}
                   </td>
                   <td className="px-2 sm:px-4 py-2 border-b whitespace-nowrap">
-                    {request.payment_id.includes(request.student_id) ? (
-                      <button
-                        className="text-white bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 hover:bg-gradient-to-br font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
-                        onClick={() =>
-                          openModal(
-                            request.student_id,
-                            request.remark,
-                            request.amount
-                          )
-                        }
-                      >
-                        Bypass
-                      </button>
-                    ) : (
-                      request.payment_id
-                    )}
+                    {new Date(request.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-2 sm:px-4 py-2 border-b whitespace-nowrap">
-                    {new Date(request.createdAt).toLocaleDateString()}
+                    <button
+                      className="text-white bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 hover:bg-gradient-to-br font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
+                      onClick={() =>
+                        openModal(
+                          request.student_id._id,
+                          request.amount,
+                          request.remark
+                        )
+                      }
+                    >
+                      Bypass
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center my-4 gap-2">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-sm rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-sm rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       )}
 
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4 sm:px-6">
           <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-xl">
             <h3 className="text-lg sm:text-xl font-bold mb-4 text-blue-600 text-center sm:text-left">
-              Enter Remarks
+              Enter Comments
             </h3>
             <textarea
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
+              value={comments}
+              onChange={(e) => setComments(e.target.value)}
               className="w-full border p-2 rounded mb-4 resize-none text-sm sm:text-base"
               rows={3}
               placeholder="Enter remarks for bypassing... Include (Cash Collected)"
             />
             {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
+            <h3 className="text-lg sm:text-xl font-bold mb-4 text-blue-600 text-center sm:text-left">
+              Remark
+            </h3>
+            <textarea
+              value={remarks}
+              disabled={true}
+              className="w-full border p-2 rounded mb-4 resize-none text-sm sm:text-base"
+            />
             <h3 className="text-lg sm:text-xl font-bold mb-2 text-blue-600">
               Amount
             </h3>
@@ -224,7 +206,6 @@ const PendingRequestsTable = ({
               value={amount}
               disabled={true}
               className="w-full border p-2 rounded mb-4 text-sm sm:text-base"
-              placeholder="Enter amount"
             />
             <div className="flex flex-col sm:flex-row justify-end gap-2">
               <button

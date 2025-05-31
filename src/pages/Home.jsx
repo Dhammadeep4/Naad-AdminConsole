@@ -4,7 +4,11 @@ import { assets } from "../assets/assets";
 const Home = ({ user, setUser }) => {
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
     setUser(null);
+    setRole(null);
+    navigate("/login");
   };
 
   return (
@@ -27,7 +31,7 @@ const Home = ({ user, setUser }) => {
         {/* Left Column - Image + Hello */}
         <div className="md:w-1/3 flex flex-col items-center md:items-start text-red-700">
           <img
-            src={assets.logo}
+            src={assets.naad_logo}
             alt="Admin Avatar"
             className="rounded-full w-48 h-48 object-cover shadow-lg mb-6"
           />
@@ -54,10 +58,7 @@ const Home = ({ user, setUser }) => {
               </span>
             </div>
           </NavLink>
-          <NavLink
-            to="/upload-notes"
-            className="transform hover:scale-105 transition"
-          >
+          <NavLink to="/" className="transform hover:scale-105 transition">
             <div className="bg-red-400 hover:bg-red-500 rounded-3xl h-44 flex items-center justify-center shadow-lg cursor-pointer transition">
               <span className="text-white font-bold text-lg text-center px-4">
                 Upload Notes

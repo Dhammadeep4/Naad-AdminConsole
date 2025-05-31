@@ -48,8 +48,14 @@ const Delete = () => {
 
   const fetchProfile = async () => {
     try {
+      const token = localStorage.getItem("token");
       const response = await axios.get(
-        `${backendUrl}/api/admin/studentProfile/${studentId}`
+        `${backendUrl}/api/admin/studentProfile/${studentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // 🔐 Include JWT token
+          },
+        }
       );
       setUser(response.data.profile);
     } catch (error) {

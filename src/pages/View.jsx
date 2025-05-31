@@ -10,31 +10,29 @@ const View = () => {
   const [list, setList] = useState([]);
   const [filteredList, setFilteredList] = useState([]);
   const [selectedYear, setSelectedYear] = useState("All Year");
+  const [loading, setLoading] = useState(true);
+  const fetchList = async () => {
+    try {
+      const response = await axios.get(backendUrl + "/api/admin/students");
+
+      if (response.data.success) {
+        setList(response.data.students);
+        setFilteredList(response.data.students);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to fetch student list.");
+    }
+  };
 
   useEffect(() => {
-    const fetchList = async () => {
-      try {
-        const response = await axios.get(backendUrl + "/api/admin/students");
-
-        if (response.data.success) {
-          const sortedStudents = response.data.students.sort(
-            (a, b) =>
-              new Date(parseInt(b._id.substring(0, 8), 16) * 1000) -
-              new Date(parseInt(a._id.substring(0, 8), 16) * 1000)
-          );
-          setList(sortedStudents);
-          setFilteredList(sortedStudents);
-        } else {
-          toast.error(response.data.message);
-        }
-      } catch (error) {
-        toast.error(error.message || "Failed to fetch student list.");
-      }
+    const loadStudents = async () => {
+      await fetchList();
+      setLoading(false);
     };
-
-    fetchList();
+    loadStudents();
   }, []);
-
   const handleFilterChange = (e) => {
     const year = e.target.value;
     setSelectedYear(year);
@@ -56,6 +54,13 @@ const View = () => {
   const inactiveStudents = filteredList.filter(
     (student) => student.status === "inactive"
   );
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-pink-100 to-red-200">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-pink-600 border-solid"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-200 p-4 md:p-8">
