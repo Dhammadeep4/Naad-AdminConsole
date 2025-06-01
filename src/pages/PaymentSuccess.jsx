@@ -12,7 +12,9 @@ const PaymentSuccess = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("✅ PaymentSuccess page mounted");
     const update = async () => {
+      console.log("Running update");
       // const user = JSON.parse(localStorage.getItem("user")); // ✅ Parse JSON
 
       // console.log(user);
