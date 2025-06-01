@@ -64,7 +64,7 @@ const StudHomepage = ({ user, setUser }) => {
         await fetchPending(user._id);
         let lastDate = await fetchlastPayment(user._id);
 
-        console.log("lastDate", moment(lastDate));
+        //console.log("lastDate", moment(lastDate));
         let registration = 0;
         let diffInMonths = 0;
         if (lastDate === undefined) {
@@ -77,19 +77,19 @@ const StudHomepage = ({ user, setUser }) => {
 
         let fee = await fetchFees(profile.year);
         setFeeAmt(fee);
-        console.log("Registration", registration);
+        //console.log("Registration", registration);
         let feedate = moment().startOf("month"); //1st of every month
         // console.log("Date", feedate);
-        /* check fee logic with manipulated dates
-        lastDate = moment("2025-03-20 10:30:00");
-        feedate = moment("2025-05-1 10:30:00");
+        //check fee logic with manipulated dates
+        // lastDate = moment("2025-05-31 09:38:09");
+        // feedate = moment("2025-06-1 17:19:00");
         if (moment(lastDate).isBefore(feedate)) {
           setFeesFlag(true);
           diffInMonths = feedate.diff(lastDate, "months");
           if (diffInMonths > 0) {
             setArrearsflag(true);
           }
-        }*/ //ends here
+        } //ends here
         if (lastDate != null && moment(lastDate.date).isSame(feedate)) {
           setFeesFlag(false);
         }
@@ -100,7 +100,7 @@ const StudHomepage = ({ user, setUser }) => {
             setArrearsflag(true);
           }
         }
-        console.log("Difference", diffInMonths);
+        //console.log("Difference", diffInMonths);
         const amt = Number(fee + diffInMonths * fee + registration);
         setAmount(amt);
       }
@@ -110,13 +110,14 @@ const StudHomepage = ({ user, setUser }) => {
       if (error.response?.status === 401 || error.response?.status === 403) {
         toast.error("Session expired or unauthorized. Please log in again.");
         localStorage.removeItem("user");
+        localStorage.removeItem("token");
         setUser(null);
         navigate("/login");
       }
     }
   };
   const fetchHistory = async (id) => {
-    console.log("id", id);
+    //console.log("id", id);
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -133,7 +134,7 @@ const StudHomepage = ({ user, setUser }) => {
       );
 
       if (response.data.success) {
-        console.log(response.data.history);
+        //console.log(response.data.history);
         setPayment_History(response.data.history);
       } else {
         console.log("error fetching history");
@@ -145,7 +146,7 @@ const StudHomepage = ({ user, setUser }) => {
   };
   const fetchPending = async (id) => {
     try {
-      console.log("PendingId", id);
+      //console.log("PendingId", id);
       const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Session expired. Please log in again.");
@@ -245,7 +246,8 @@ const StudHomepage = ({ user, setUser }) => {
         },
         notes: {
           amount: amount,
-          remark: remarks, // optional tracking info
+          remark: remarks,
+          uid: student._id, // optional tracking info
         },
         theme: { color: "#F37254" },
       };
