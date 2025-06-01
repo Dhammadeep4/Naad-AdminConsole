@@ -140,8 +140,8 @@ function App() {
           }
         />
 
-        <Route path="/paymentsuccess" element={<PaymentSuccess />} />
-        <Route path="/paymentfailure" element={<PaymentFailure />} />
+        <Route path="/paymentSuccess" element={<PaymentSuccess />} />
+        <Route path="/paymentFailure" element={<PaymentFailure />} />
       </Routes>
     </>
   );
