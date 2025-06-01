@@ -39,7 +39,7 @@ const PaymentSuccess = () => {
         const response = await axios.post(
           `${backendUrl}/api/v1/updateDB`,
           {
-            student_id,
+            student_id:query.get("uid"),
             payment_id,
             mode: "online",
             remark: remarkVal,
