@@ -13,15 +13,15 @@ const PaymentSuccess = () => {
 
   useEffect(() => {
     const update = async () => {
-      const user = JSON.parse(localStorage.getItem("user")); // ✅ Parse JSON
+      // const user = JSON.parse(localStorage.getItem("user")); // ✅ Parse JSON
 
-      console.log(user);
-      const { _id } = user;
+      // console.log(user);
+      // const { _id } = user;
       const query = new URLSearchParams(window.location.search);
       const payment_id = query.get("reference");
       const amountVal = query.get("amount");
       const remarkVal = query.get("remarks");
-      const student_id = user._id;
+      const student_id = query.get("uid");
       const currentDate = new Date().toLocaleDateString();
       // Set values into state to use in JSX
       setPaymentId(payment_id);
@@ -35,6 +35,7 @@ const PaymentSuccess = () => {
           return;
         }
         // update DB
+        //console.log("Student ID:", student_id);
         const response = await axios.post(
           `${backendUrl}/api/v1/updateDB`,
           {
@@ -57,7 +58,7 @@ const PaymentSuccess = () => {
           toast.error("Payments collection not updated");
         }
 
-        console.log("remark:" + remarkVal);
+        //console.log("remark:" + remarkVal);
       } catch (err) {
         console.error("Update failed", err.message);
         toast.error("Something went wrong.");
