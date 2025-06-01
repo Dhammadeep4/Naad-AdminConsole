@@ -35,11 +35,11 @@ const PaymentSuccess = () => {
           return;
         }
         // update DB
-        //console.log("Student ID:", student_id);
+        console.log("Student ID:", student_id);
         const response = await axios.post(
           `${backendUrl}/api/v1/updateDB`,
           {
-            student_id:query.get("uid"),
+            student_id,
             payment_id,
             mode: "online",
             remark: remarkVal,
