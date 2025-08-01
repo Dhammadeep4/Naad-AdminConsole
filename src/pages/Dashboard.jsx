@@ -15,6 +15,7 @@ const Dashboard = () => {
   const [history, setHistory] = useState([]);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [students, setStudents] = useState([]);
+  const [feeCard, setFeeCard] = useState([]);
   const [paymentRequests, setPaymentRequests] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -41,6 +42,8 @@ const Dashboard = () => {
       if (res.data.success) {
         toast.success(res.data.message);
         await fetchPending();
+        await fetchStudents();
+        await fetchFees();
       } else {
         toast.error(res.data.message || "Failed to create request");
       }
@@ -101,11 +104,37 @@ const Dashboard = () => {
       toast.error("Error fetching pending requests");
     }
   };
+  const fetchFees = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+      const response = await axios.get(backendUrl + `/api/fee/getFee`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // 🔐 Include JWT token
+        },
+      });
 
+      // console.log(response.data.fees);
+      if (response.data.success) {
+        setFeeCard(response.data.fees);
+        const fees = response.data.fees;
+
+        //console.log("fee:", fees);
+      } else {
+        toast.error("Failed to fetch fees data cannot perform bypass");
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
   useEffect(() => {
     const init = async () => {
       await fetchStudents();
       await fetchPending();
+      await fetchFees();
       setLoading(false);
     };
     init();
@@ -171,7 +200,7 @@ const Dashboard = () => {
             students={students}
             fetchStudents={fetchStudents}
           /> */}
-          <HistoryTable students={students} />
+          <HistoryTable students={students} feeCard={feeCard} />
         </div>
 
         <div className="overflow-x-auto rounded-xl bg-white p-4 shadow">

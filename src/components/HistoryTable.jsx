@@ -3,12 +3,17 @@ import moment from "moment";
 import axios from "axios";
 import { backendUrl } from "../App";
 import { toast } from "react-toastify";
-const HistoryTable = ({ students }) => {
+import CarryRequest from "./CarryRequest";
+const HistoryTable = ({ students, feeCard }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [remarks, setRemarks] = useState("");
   const [paid, setPaid] = useState(0);
   const [pending, setPending] = useState(0);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedAmount, setSelectedAmount] = useState(0);
 
   const [error, setError] = useState("");
   const [amount, setAmount] = useState("");
@@ -17,7 +22,7 @@ const HistoryTable = ({ students }) => {
   const studentsPerPage = 10;
 
   const today = moment();
-  const fifthOfMonth = moment().startOf("month").add(4, "days");
+  const fifthOfMonth = moment().startOf("month").add(1, "days"); // 2nd of every month
   console.log("students:", students.length);
   const shouldShowBypass = (student) => {
     const lastPaymentDate = student?.lastPayment?.createdAt;
@@ -25,12 +30,59 @@ const HistoryTable = ({ students }) => {
     return moment(lastPaymentDate).isBefore(fifthOfMonth);
   };
 
-  //show modal
+  const getFeeAmt = (year) => {
+    var y = year.toLowerCase();
+    y = y.replace(" ", "_");
+    const amount = feeCard[0][y];
+    return amount;
+  };
 
-  const openModal = (id) => {
+  const handleModalSubmit = async (data) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+      const res = await axios.post(
+        `${backendUrl}/api/v1/paymentRequest`,
+        {
+          student_id: data.student_id,
+          remark: data.remarks,
+          amount: data.amount,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // 🔐 Include JWT token
+          },
+        }
+      );
+      if (res.data.success) {
+        toast.success(res.data.message);
+        //await fetchPending();
+      } else {
+        toast.error(res.data.message || "Failed to create request");
+      }
+    } catch {
+      toast.error("Error while creating a payment request");
+    }
+  };
+
+  //show modal
+  const openModal = (id, firstname, lastname, year) => {
+    const amount = getFeeAmt(year);
+    console.log(amount);
+
     setSelectedStudentId(id);
-    setRemarks("");
-    setAmount("");
+    const today = new Date();
+    const day = today.getDate(); // Returns the day of the month (1-31)
+    const month = today.getMonth() + 1; // Returns the month (0-11), so add 1 for actual month number
+    const current_year = today.getFullYear();
+
+    setRemarks(
+      `${day}/${month}/${current_year}-Monthly Fee collected for ${firstname} ${lastname}`
+    );
+    setAmount(amount);
     setShowModal(true);
   };
 
@@ -68,6 +120,7 @@ const HistoryTable = ({ students }) => {
 
       if (response.data.success) {
         toast.success("Payments collection updated");
+        setShowModal(false);
       } else {
         toast.error("Payments collection not updated");
       }
@@ -183,14 +236,34 @@ const HistoryTable = ({ students }) => {
                   <td className="p-2">{paymentDate}</td>
                   <td className="p-2">{paymentMode}</td>
                   <td className="p-2">
-                    {showBypass && (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {showBypass && (
+                        <button
+                          onClick={() =>
+                            openModal(
+                              student._id,
+                              student.firstname,
+                              student.lastname,
+                              student.year
+                            )
+                          }
+                          className="text-white bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 hover:bg-gradient-to-br font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
+                        >
+                          Bypass
+                        </button>
+                      )}
+
                       <button
-                        onClick={() => openModal(student._id)}
-                        className="text-white bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 hover:bg-gradient-to-br font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
+                        onClick={() => {
+                          setSelectedAmount(getFeeAmt(student.year));
+                          setSelectedStudent(student);
+                          setIsModalOpen(true);
+                        }}
+                        className="text-white bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 hover:bg-gradient-to-br font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
                       >
-                        Bypass
+                        Carry
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -257,6 +330,16 @@ const HistoryTable = ({ students }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {isModalOpen && (
+        <CarryRequest
+          student={selectedStudent}
+          amount={selectedAmount}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleModalSubmit}
+        />
       )}
     </div>
   );

@@ -116,16 +116,24 @@ const NaadInstitute = () => {
 
         <div className="grid md:grid-cols-2 gap-4 bg-gray-100 p-4 rounded">
           <div>
-            <h3 className="text-xl font-medium mb-2">Location</h3>
+            <h3 className="text-xl font-medium mb-2">
+              Ms. Vishakha Gaikwad Kathak Visharad | Founder – Naad Nrutya
+              Kathak Institute
+            </h3>
             <p className="mb-2">
-              Thanks for stopping by. We are the last authentic Italian
-              restaurant in Milan, serving delicious Italian cuisine cooked by
-              the best chefs...
-            </p>
-            <h5 className="text-lg font-semibold">A Unique Experience</h5>
-            <p>
-              It only takes a few minutes to browse through our website and
-              check out our menu...
+              {" "}
+              Ms. Vishakha Gaikwad, a dedicated Kathak Visharad, has trained
+              under the esteemed Shri. Swati Kolle and carries forward her
+              guru's legacy with grace and devotion. With strong roots in
+              Nrutta, Nrutya, and Natya, she is both a skilled performer and a
+              passionate mentor.{" "}
+            </p>{" "}
+            <p className="mb-2">
+              {" "}
+              Her institute, Naad Nrutya, embodies her vision to preserve
+              Kathak’s rich tradition while nurturing young talent with
+              discipline, cultural depth, and spiritual connection through
+              dance.{" "}
             </p>
           </div>
           <div data-aos="fade-up">
@@ -146,16 +154,26 @@ const NaadInstitute = () => {
             />
           </div>
           <div className="order-1 md:order-2">
-            <h3 className="text-xl font-medium mb-2">Cuisine</h3>
+            <h3 className="text-xl font-medium mb-2">
+              Vision Statement – Naad Nrutya Kathak Institute
+            </h3>
             <p className="mb-2">
-              Thanks for stopping by. We are the last authentic Italian
-              restaurant in Milan, serving delicious Italian cuisine cooked by
-              the best chefs...
+              At Naad Nrutya, our mission is to revive and preserve the rich
+              heritage of Kathak by offering a structured learning path from the
+              basics to advanced levels. Rooted in the traditional guru-shishya
+              parampara, we focus on nurturing each student with sincerity and
+              respect, fostering not just technical skill but also strong
+              values, discipline, and inner strength through the classical art
+              form.{" "}
             </p>
-            <h5 className="text-lg font-semibold">A Unique Experience</h5>
-            <p>
-              It only takes a few minutes to browse through our website and
-              check out our menu...
+            <p className="mb-2">
+              We believe dance is more than performance—it’s a journey of
+              personal growth. By integrating Nrutta (pure dance), Nrutya
+              (expression), and Natya (storytelling), we help students develop
+              confidence, self-esteem, and a deep connection with their inner
+              selves. Naad Nrutya is a space where dance becomes a way of life,
+              inspiring every student to embody Kathak with devotion, grace, and
+              purpose.
             </p>
           </div>
         </div>
