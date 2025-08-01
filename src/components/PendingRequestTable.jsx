@@ -22,10 +22,18 @@ const PendingRequestsTable = ({ paymentRequests, students }) => {
     studentMap[student._id] = student;
   });
 
-  const openModal = (id, amt, remark) => {
+  const openModal = (id, firstname, lastname, amt, remark) => {
     setSelectedStudentId(id);
     setRemarks(remark);
-    setComments("");
+
+    const today = new Date();
+    const day = today.getDate(); // Returns the day of the month (1-31)
+    const month = today.getMonth() + 1; // Returns the month (0-11), so add 1 for actual month number
+    const current_year = today.getFullYear();
+
+    setComments(
+      `${day}/${month}/${current_year}-Pending Cash Collected for ${firstname} ${lastname}`
+    );
     setAmount(amt);
     setError("");
     setShowModal(true);
@@ -135,6 +143,8 @@ const PendingRequestsTable = ({ paymentRequests, students }) => {
                       onClick={() =>
                         openModal(
                           request.student_id._id,
+                          request.student_id.firstname,
+                          request.student_id.lastname,
                           request.amount,
                           request.remark
                         )

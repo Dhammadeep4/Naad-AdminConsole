@@ -58,7 +58,7 @@ const Home = ({ user, setUser }) => {
               </span>
             </div>
           </NavLink>
-          <NavLink to="/" className="transform hover:scale-105 transition">
+          <NavLink to="/home" className="transform hover:scale-105 transition">
             <div className="bg-red-400 hover:bg-red-500 rounded-3xl h-44 flex items-center justify-center shadow-lg cursor-pointer transition">
               <span className="text-white font-bold text-lg text-center px-4">
                 Upload Notes
