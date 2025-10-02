@@ -7,7 +7,7 @@ import {
   Legend,
   ResponsiveContainer,
   Bar,
-  Line,
+  LabelList,
 } from "recharts";
 import axios from "axios";
 import { backendUrl } from "../App";
@@ -19,17 +19,22 @@ const PaymentChart = () => {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(`${backendUrl}/api/v1/getAnalytics`, {
-          headers: {
-            Authorization: `Bearer ${token}`, // 🔐 Include JWT token
-          },
-        });
-        const formatted = Object.entries(res.data).map(([month, value]) => ({
-          month,
-          amount: value.amount,
-          uniqueStudents: value.uniqueStudents,
+        const res = await axios.get(
+          `${backendUrl}/api/v1/getAnalyticsRevised`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // Format response for recharts
+        const formatted = res.data.map((item) => ({
+          month: `${item.year}-${item.month}`, // e.g. 2025-5
+          totalCollection: item.totalCollection,
+          studentCount: item.studentCount,
         }));
-        console.log("Chart data:", formatted);
+
         setData(formatted);
       } catch (err) {
         console.error("Error fetching analytics", err);
@@ -39,10 +44,9 @@ const PaymentChart = () => {
     fetchStats();
   }, []);
 
-  // Responsive container styles for different screen widths
   const containerStyle = {
-    width: "95%", // default width (almost full width)
-    maxWidth: 900, // max width for large screens
+    width: "95%",
+    maxWidth: 900,
     height: 400,
     margin: "auto",
   };
@@ -50,7 +54,7 @@ const PaymentChart = () => {
   return (
     <div style={containerStyle}>
       <h2 className="text-xl font-bold mb-4" style={{ textAlign: "center" }}>
-        📊 Monthly Payment Collection
+        📊 Monthly Total Collection
       </h2>
       <ResponsiveContainer width="100%" height="80%">
         <ComposedChart
@@ -58,24 +62,23 @@ const PaymentChart = () => {
           margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
         >
           <XAxis dataKey="month" />
-          <YAxis yAxisId="left" />
-          <YAxis yAxisId="right" orientation="right" />
+          <YAxis />
           <Tooltip />
           <Legend />
           <Bar
-            yAxisId="left"
-            dataKey="amount"
+            dataKey="totalCollection"
             fill="#4caf50"
-            name="Total Amount ₹"
-            barSize={20}
-          />
-          <Line
-            yAxisId="right"
-            type="monotone"
-            dataKey="uniqueStudents"
-            stroke="#ff9800"
-            name="Unique Students"
-          />
+            name="Total Collection ₹"
+            barSize={40}
+          >
+            {/* 👇 Show student count on top of each bar */}
+            <LabelList
+              dataKey="studentCount"
+              position="top"
+              formatter={(value) => `${value} students`}
+              style={{ fontSize: 12, fill: "#333" }}
+            />
+          </Bar>
         </ComposedChart>
       </ResponsiveContainer>
     </div>

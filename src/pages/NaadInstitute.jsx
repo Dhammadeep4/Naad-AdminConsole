@@ -123,7 +123,7 @@ const NaadInstitute = () => {
             <p className="mb-2">
               {" "}
               Ms. Vishakha Gaikwad, a dedicated Kathak Visharad, has trained
-              under the esteemed Shri. Swati Kolle and carries forward her
+              under the esteemed Guru Sau. Swati Kolle and carries forward her
               guru's legacy with grace and devotion. With strong roots in
               Nrutta, Nrutya, and Natya, she is both a skilled performer and a
               passionate mentor.{" "}

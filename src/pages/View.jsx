@@ -11,6 +11,8 @@ const View = () => {
   const [filteredList, setFilteredList] = useState([]);
   const [selectedYear, setSelectedYear] = useState("All Year");
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const fetchList = async () => {
     try {
       const response = await axios.get(backendUrl + "/api/admin/students");
@@ -36,16 +38,33 @@ const View = () => {
   const handleFilterChange = (e) => {
     const year = e.target.value;
     setSelectedYear(year);
+    filterStudents(year, searchQuery);
+  };
 
-    if (year === "All Year") {
-      setFilteredList(list);
-    } else {
-      setFilteredList(
-        list.filter(
-          (student) => student.year.toLowerCase() === year.toLowerCase()
-        )
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    filterStudents(selectedYear, query);
+  };
+
+  const filterStudents = (year, query) => {
+    let filtered = list;
+
+    if (year !== "All Year") {
+      filtered = filtered.filter(
+        (student) => student.year.toLowerCase() === year.toLowerCase()
       );
     }
+
+    if (query.trim() !== "") {
+      filtered = filtered.filter((student) =>
+        `${student.firstname} ${student.middlename || ""} ${student.lastname}`
+          .toLowerCase()
+          .includes(query.toLowerCase())
+      );
+    }
+
+    setFilteredList(filtered);
   };
 
   const activeStudents = filteredList.filter(
@@ -81,12 +100,22 @@ const View = () => {
           <div></div> {/* Right spacer to balance layout */}
         </div>
 
-        {/* Filter Dropdown */}
-        <div className="mb-8 flex justify-end">
+        {/* Filter + Search */}
+        <div className="mb-8 flex flex-col sm:flex-row justify-end gap-3">
+          {/* Search Bar */}
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="🔍 Search student..."
+            className="p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white text-sm w-full sm:w-60"
+          />
+
+          {/* Year Filter */}
           <select
             value={selectedYear}
             onChange={handleFilterChange}
-            className="p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-sm"
+            className="p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-sm w-full sm:w-52"
           >
             <option value="All Year">All Year</option>
             <option value="Chote nartak">Chote Nartak</option>

@@ -184,8 +184,12 @@ const Edit = () => {
             <option value="Prarambhik">Prarambhik</option>
             <option value="Praveshika pratham">Praveshika pratham</option>
             <option value="Praveshika purna">Praveshika purna</option>
+            <option value="Praveshika purna batch1">
+              Praveshika purna Batch1
+            </option>
             <option value="Madhyama pratham">Madhyama pratham</option>
             <option value="Madhyama purna">Madhyama purna</option>
+            <option value="Madhyama purna batch1">Madhyama purna Batch1</option>
             <option value="Visharad pratham">Visharad pratham</option>
             <option value="Visharad purna">Visharad purna</option>
           </select>

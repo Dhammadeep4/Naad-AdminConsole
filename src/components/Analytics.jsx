@@ -42,6 +42,7 @@ const Analytics = ({ paymentHistory, students, paymentRequests }) => {
         studentCount: data.studentIds.size,
       }));
 
+    //console.log("Sorted Analytics:", sortedAnalytics);
     return sortedAnalytics;
   };
 
