@@ -4,6 +4,7 @@ import axios from "axios";
 import { backendUrl } from "../App";
 import { toast } from "react-toastify";
 import CarryRequest from "./CarryRequest";
+import BatchCarryModal from "./BatchCarryModal";
 import { start } from "@popperjs/core";
 
 const HistoryTable = ({ students, feeCard }) => {
@@ -16,6 +17,8 @@ const HistoryTable = ({ students, feeCard }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedAmount, setSelectedAmount] = useState(0);
+
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
 
   const [error, setError] = useState("");
   const [amount, setAmount] = useState("");
@@ -37,7 +40,7 @@ const HistoryTable = ({ students, feeCard }) => {
 
   const today = moment();
   const fifthOfMonth = moment().startOf("month").add(1, "days");
-  console.log("Fifth of month:", fifthOfMonth.format("YYYY-MM-DD"));
+  //console.log("Fifth of month:", fifthOfMonth.format("YYYY-MM-DD"));
 
   const shouldShowBypass = (student) => {
     const today = moment();
@@ -59,9 +62,9 @@ const HistoryTable = ({ students, feeCard }) => {
     const feePending =
       !feeUntil || feeUntil.isSameOrBefore(startOfMonth, "day");
     if (feeUntil) {
-      console.log("Fee paid until:", feeUntil.format("YYYY-MM-DD"));
-      console.log("Month being checked:", startOfMonth.format("YYYY-MM-DD"));
-      console.log("Is fee pending?", feePending);
+      //  console.log("Fee paid until:", feeUntil.format("YYYY-MM-DD"));
+      // console.log("Month being checked:", startOfMonth.format("YYYY-MM-DD"));
+      // console.log("Is fee pending?", feePending);
       return feePending;
     }
 
@@ -143,7 +146,7 @@ const HistoryTable = ({ students, feeCard }) => {
       // update DB
 
       const currentDate = new Date().toLocaleDateString();
-      console.log("FeePaidUntil:", feePaidUntil + "-01");
+      // console.log("FeePaidUntil:", feePaidUntil + "-01");
       const response = await axios.post(
         `${backendUrl}/api/v1/updateDB`,
         {
@@ -211,7 +214,10 @@ const HistoryTable = ({ students, feeCard }) => {
       return aNeedsBypass ? -1 : 1;
     });
   }, [students, selectedYear, searchQuery]);
-
+  // Memoized list of students pending for carry/bypass
+  const pendingStudents = useMemo(() => {
+    return students.filter(shouldShowBypass);
+  }, [students]);
   // 🔹 Pagination
   const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
   const paginatedStudents = filteredStudents.slice(
@@ -271,6 +277,18 @@ const HistoryTable = ({ students, feeCard }) => {
       <div className="flex justify-center items-center gap-6 mb-4 text-sm sm:text-lg font-semibold">
         <div className="text-green-600">✅ Paid: {paid}</div>
         <div className="text-red-600">❌ Pending: {pending}</div>
+        {/* 4. NEW Batch Carry Button */}
+        <button
+          onClick={() => setIsBatchModalOpen(true)}
+          disabled={pendingStudents.length === 0}
+          className={`px-4 py-2 rounded-lg font-medium transition text-sm md:text-base whitespace-nowrap ${
+            pendingStudents.length > 0
+              ? "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
+              : "bg-gray-400 text-gray-700 cursor-not-allowed"
+          }`}
+        >
+          Batch Carry ({pendingStudents.length})
+        </button>
       </div>
 
       {/* 🔹 Table */}
@@ -336,16 +354,18 @@ const HistoryTable = ({ students, feeCard }) => {
                           </button>
                         )}
 
-                        <button
-                          onClick={() => {
-                            setSelectedAmount(getFeeAmt(student.year));
-                            setSelectedStudent(student);
-                            setIsModalOpen(true);
-                          }}
-                          className="text-white bg-yellow-500 hover:bg-yellow-600 font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
-                        >
-                          Carry
-                        </button>
+                        {showBypass && (
+                          <button
+                            onClick={() => {
+                              setSelectedAmount(getFeeAmt(student.year));
+                              setSelectedStudent(student);
+                              setIsModalOpen(true);
+                            }}
+                            className="text-white bg-yellow-500 hover:bg-yellow-600 font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
+                          >
+                            Carry
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -451,6 +471,17 @@ const HistoryTable = ({ students, feeCard }) => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleModalSubmit}
+        />
+      )}
+
+      {/* 5. Batch Carry Modal (NEW) */}
+      {isBatchModalOpen && (
+        <BatchCarryModal
+          pendingStudents={pendingStudents} // Pass only the pending students
+          getFeeAmt={getFeeAmt}
+          isOpen={isBatchModalOpen}
+          onClose={() => setIsBatchModalOpen(false)}
+          //onSubmit={handleModalSubmit} // Use the same submit handler (modified to handle batch)
         />
       )}
     </div>
