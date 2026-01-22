@@ -179,6 +179,7 @@ const HistoryTable = ({ students, feeCard }) => {
   // Unique years for dropdown
   const years = useMemo(() => {
     const allYears = students.map((s) => s.year);
+    // console.log("All Years:", allYears);
     return ["All", ...new Set(allYears)];
   }, [students]);
 

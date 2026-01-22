@@ -18,6 +18,37 @@ const Edit = () => {
   const [dob, setDOB] = useState("");
   const [doj, setDOJ] = useState("");
   const [year, setYear] = useState("");
+ //State to hold dynamic classes
+  const [classList, setClassList] = useState([]);
+
+// Fetch Classes from Backend
+  const fetchClasses = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      // Use the endpoint we discussed (e.g., /api/fee/getFee or /api/fee/classes)
+      const response = await axios.get(backendUrl + "/api/fee/getFee", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        // If your API returns the fees object, extract the keys
+        const feeData = response.data.fees[0];
+        const internalKeys = ["_id", "__v", "createdAt", "updatedAt", "registration"];
+        
+        const dynamicClasses = Object.keys(feeData).filter(
+          (key) => !internalKeys.includes(key)
+        );
+        
+        setClassList(dynamicClasses);
+      }
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      toast.error("Failed to load classes");
+    }
+  };
+
+
+
 
   const handleSubmit = async (e) => {
     const form = new FormData();
@@ -34,7 +65,16 @@ const Edit = () => {
     form.append("year", year);
 
     e.preventDefault();
-
+    // console.log("Form Data Submitted:", {
+    //   firstName,
+    //   middleName,
+    //   lastName,
+    //   address,
+    //   contact,
+    //   dob,
+    //   doj,
+    //   year,
+    // });
     const response = await axios.post(
       backendUrl + `/api/admin/edit/${studentId}`,
       form
@@ -75,6 +115,7 @@ const Edit = () => {
     }
   };
   useEffect(() => {
+    fetchClasses();
     fetchProfile();
   }, []);
 
@@ -173,26 +214,30 @@ const Edit = () => {
             required
             className="p-3 border border-gray-300 rounded-lg w-full"
           />
-          <select
-            name="year"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            required
-            className="p-3 border border-gray-300 rounded-lg w-full"
-          >
-            <option value="Chote nartak">Chote Nartak</option>
-            <option value="Prarambhik">Prarambhik</option>
-            <option value="Praveshika pratham">Praveshika pratham</option>
-            <option value="Praveshika purna">Praveshika purna</option>
-            <option value="Praveshika purna batch1">
-              Praveshika purna Batch1
-            </option>
-            <option value="Madhyama pratham">Madhyama pratham</option>
-            <option value="Madhyama purna">Madhyama purna</option>
-            <option value="Madhyama purna batch1">Madhyama purna Batch1</option>
-            <option value="Visharad pratham">Visharad pratham</option>
-            <option value="Visharad purna">Visharad purna</option>
-          </select>
+           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Select Class (Year)
+            </label>
+            <select
+              name="year"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              required
+              className="p-3 border border-gray-300 rounded-lg w-full capitalize"
+            >
+              <option value="" disabled>
+                -- Choose Class --
+              </option>
+              
+              {/* 3. Map over the dynamic classList */}
+              {classList.map((className) => (
+                <option key={className} value={className}>
+                  {className.replace(/_/g, " ")}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
             type="submit"
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold p-3 rounded-lg"

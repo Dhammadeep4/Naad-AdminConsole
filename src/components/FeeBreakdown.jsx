@@ -3,6 +3,7 @@ import React, { useState } from "react";
 const FeeBreakdown = ({ data }) => {
   const [showTable, setShowTable] = useState(false);
 
+ // console.log("Fee Breakdown Data:", data);
   if (!data) return null;
 
   return (

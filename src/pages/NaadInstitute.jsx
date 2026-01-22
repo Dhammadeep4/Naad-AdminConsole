@@ -23,7 +23,7 @@ const NaadInstitute = () => {
   useEffect(() => {
     if (!loading) {
       const map = L.map("map").setView(
-        [19.145720221974702, 72.99769619213578],
+        [19.143299, 72.996876],
         15
       );
 
@@ -31,7 +31,7 @@ const NaadInstitute = () => {
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(map);
 
-      L.marker([19.145720221974702, 72.99769619213578])
+      L.marker([19.143299, 72.996876])
         .addTo(map)
         .bindPopup("📍 Naad Nrutya Kathak Institute!")
         .openPopup();
@@ -190,7 +190,7 @@ const NaadInstitute = () => {
           <div className="md:col-span-3 space-y-3">
             <div>
               <h3 className="font-bold">Address:</h3>
-              <p>Shop No:1, Jupiter Building Sector 6, Airoli-400708</p>
+              <p>Shop No:3, Sai Paradise CHS Sector 8A, Airoli-400708</p>
             </div>
             <div>
               <h3 className="font-bold">Email:</h3>
@@ -204,7 +204,7 @@ const NaadInstitute = () => {
           <p>
             Follow us:
             <a
-              className="mx-2 text-red-600 hover:underline"
+              className="mx-2 text-red-600 hover:underline"ß
               href="https://www.youtube.com/@naadnrutyaa"
               target="_blank"
               rel="noopener noreferrer"

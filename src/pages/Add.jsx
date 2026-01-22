@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState ,useEffect} from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { backendUrl } from "../App";
@@ -8,6 +8,9 @@ const Add = () => {
   const navigate = useNavigate();
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  //State to hold dynamic classes
+  const [classList, setClassList] = useState([]);
+
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -18,6 +21,32 @@ const Add = () => {
     doj: "",
     year: "",
   });
+
+// Fetch Classes from Backend
+  const fetchClasses = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      // Use the endpoint we discussed (e.g., /api/fee/getFee or /api/fee/classes)
+      const response = await axios.get(backendUrl + "/api/fee/getFee", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        // If your API returns the fees object, extract the keys
+        const feeData = response.data.fees[0];
+        const internalKeys = ["_id", "__v", "createdAt", "updatedAt", "registration"];
+        
+        const dynamicClasses = Object.keys(feeData).filter(
+          (key) => !internalKeys.includes(key)
+        );
+        
+        setClassList(dynamicClasses);
+      }
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      toast.error("Failed to load classes");
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -60,6 +89,9 @@ const Add = () => {
     }
   };
 
+  useEffect(() => {
+    fetchClasses();
+  }, []);
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-pink-100 to-red-200">
       <div className="w-full max-w-lg bg-white p-6 rounded-2xl shadow-xl">
@@ -214,32 +246,25 @@ const Add = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Year
+              Select Class (Year)
             </label>
             <select
               name="year"
               value={formData.year}
               onChange={handleChange}
               required
-              className="p-3 border border-gray-300 rounded-lg w-full"
+              className="p-3 border border-gray-300 rounded-lg w-full capitalize"
             >
               <option value="" disabled>
-                Select Year
+                -- Choose Class --
               </option>
-              <option value="Chote nartak">Chote Nartak</option>
-              <option value="Prarambhik">Prarambhik</option>
-              <option value="Praveshika pratham">Praveshika pratham</option>
-              <option value="Praveshika purna">Praveshika purna</option>
-              <option value="Praveshika purna batch1">
-                Praveshika purna Batch1
-              </option>
-              <option value="Madhyama pratham">Madhyama pratham</option>
-              <option value="Madhyama purna">Madhyama purna</option>
-              <option value="Madhyama purna batch1">
-                Madhyama purna Batch1
-              </option>
-              <option value="Visharad pratham">Visharad pratham</option>
-              <option value="Visharad purna">Visharad purna</option>
+              
+              {/* 3. Map over the dynamic classList */}
+              {classList.map((className) => (
+                <option key={className} value={className}>
+                  {className.replace(/_/g, " ")}
+                </option>
+              ))}
             </select>
           </div>
 
