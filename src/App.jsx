@@ -17,6 +17,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
 import ProtectedRoute from "./components/ProtectedRoutes"; // ✅ Import this
 import NaadInstitute from "./pages/NaadInstitute";
+import EditFee from "./pages/EditFee";
 export const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 function App() {
@@ -97,11 +98,19 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
+        {/* <Route
           path="/feeform"
           element={
             <ProtectedRoute user={user} role={role} allowedRoles={["admin"]}>
               <FeeForm user={user} setUser={setUser} />
+            </ProtectedRoute>
+          }
+        /> */}
+         <Route
+          path="/feeform"
+          element={
+            <ProtectedRoute user={user} role={role} allowedRoles={["admin"]}>
+              <EditFee user={user} setUser={setUser} />
             </ProtectedRoute>
           }
         />
