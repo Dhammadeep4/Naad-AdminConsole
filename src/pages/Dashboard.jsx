@@ -135,6 +135,11 @@ const Dashboard = () => {
     }
   };
 
+  const refreshData = async () => {
+    await fetchStudents();
+    await fetchPending();
+  };
+
   const fetchFees = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -295,13 +300,20 @@ const Dashboard = () => {
       {/* Sections */}
       <div className="space-y-6 max-w-6xl mx-auto">
         <div className="overflow-x-auto rounded-xl bg-white p-4 shadow">
-          <HistoryTable students={students} feeCard={feeCard} />
+          <HistoryTable 
+            students={students} 
+            feeCard={feeCard}
+            paymentRequests={paymentRequests}
+            onRefresh={refreshData}
+          />
         </div>
 
         <div className="overflow-x-auto rounded-xl bg-white p-4 shadow">
           <PendingRequestsTable
             paymentRequests={paymentRequests}
             students={students}
+            onDelete={fetchPending}
+            onRefresh={fetchPending}
           />
         </div>
 

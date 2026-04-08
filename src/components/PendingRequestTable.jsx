@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import axios from "axios";
 import { backendUrl } from "../App";
 import { toast } from "react-toastify";
-import { Fa0 } from "react-icons/fa6";
+import { FaTrash } from "react-icons/fa6";  // Importing the trash icon for delete button
 
-const PendingRequestsTable = ({ paymentRequests, students }) => {
+const PendingRequestsTable = ({ paymentRequests, students, onDelete, onRefresh }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [remarks, setRemarks] = useState("");
@@ -12,6 +12,7 @@ const PendingRequestsTable = ({ paymentRequests, students }) => {
   const [error, setError] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -22,6 +23,37 @@ const PendingRequestsTable = ({ paymentRequests, students }) => {
     studentMap[student._id] = student;
   });
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const refreshFunction = onRefresh || onDelete;
+      if (typeof refreshFunction === "function") {
+        await refreshFunction();
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // --- NEW DELETE HANDLER ---
+  const handleDelete = async (requestId) => {
+    if (!window.confirm("Are you sure you want to delete this request?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.delete(`${backendUrl}/api/v1/deleteRequest/${requestId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        toast.success("Request deleted successfully");
+        if (typeof onDelete === "function") onDelete();
+      }
+    } catch (err) {
+      console.error("Delete failed", err.message);
+      toast.error("Failed to delete the request.");
+    }
+  };
   const openModal = (id, firstname, lastname, amt, remark) => {
     setSelectedStudentId(id);
     setRemarks(remark);
@@ -92,9 +124,28 @@ const PendingRequestsTable = ({ paymentRequests, students }) => {
 
   return (
     <div className="mt-6 relative max-w-full px-2 sm:px-4 md:px-6 lg:px-0 mx-auto">
-      <h2 className="text-lg sm:text-xl font-semibold mb-3 text-center sm:text-left">
-        📋 Pending Payment Requests
-      </h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg sm:text-xl font-semibold text-center sm:text-left">
+          📋 Pending Payment Requests
+        </h2>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition text-sm flex items-center gap-1"
+          title="Refresh Data"
+        >
+          {isRefreshing ? (
+            <>
+              <div className="animate-spin h-3 w-3 border border-white border-t-transparent rounded-full"></div>
+              Refreshing...
+            </>
+          ) : (
+            <>
+              🔄 Refresh
+            </>
+          )}
+        </button>
+      </div>
 
       {loading && (
         <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
@@ -152,6 +203,14 @@ const PendingRequestsTable = ({ paymentRequests, students }) => {
                     >
                       Bypass
                     </button>
+                    {/* --- DELETE BUTTON --- */}
+                      <button
+                        onClick={() => handleDelete(request._id)}
+                        className="text-red-600 hover:text-white border border-red-600 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-xs px-3 py-1.5 text-center transition"
+                        title="Delete Request"
+                      >
+                        <FaTrash />
+                      </button>
                   </td>
                 </tr>
               ))}

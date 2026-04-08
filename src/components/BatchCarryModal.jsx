@@ -5,7 +5,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { backendUrl } from "../App";
 // --- 1. NEW ConfirmationDialog Component ---
-const ConfirmationDialog = ({ data, defaultRemark, onConfirm, onCancel }) => {
+const ConfirmationDialog = ({ data, defaultRemark, onConfirm, onCancel, isSubmitting }) => {
   const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
 
   return (
@@ -58,9 +58,14 @@ const ConfirmationDialog = ({ data, defaultRemark, onConfirm, onCancel }) => {
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition text-sm"
+            disabled={isSubmitting}
+            className={`px-4 py-2 text-white rounded font-medium transition text-sm ${
+              isSubmitting
+                ? "bg-blue-300 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
-            Confirm & Submit
+            {isSubmitting ? "Submitting..." : "Confirm & Submit"}
           </button>
         </div>
       </div>
@@ -69,7 +74,7 @@ const ConfirmationDialog = ({ data, defaultRemark, onConfirm, onCancel }) => {
 };
 // --- END ConfirmationDialog Component ---
 
-const BatchCarryModal = ({ pendingStudents, getFeeAmt, isOpen, onClose }) => {
+const BatchCarryModal = ({ pendingStudents, getFeeAmt, isOpen, onClose, onRefresh }) => {
   if (!isOpen) return null;
 
   const [selectedIds, setSelectedIds] = useState([]);
@@ -77,12 +82,13 @@ const BatchCarryModal = ({ pendingStudents, getFeeAmt, isOpen, onClose }) => {
   // --- 2. State for Confirmation Dialog ---
   const [isConfirming, setIsConfirming] = useState(false);
   const [requestsData, setRequestsData] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // ----------------------------------------
 
   const today = new Date();
   const month = today.getMonth() + 1;
   const current_year = today.getFullYear();
-  const defaultRemark = `Carried monthly Fee-${month}/${current_year}`;
+  const defaultRemark = `Batch Carried monthly Fee-${month}/${current_year}`;
 
   // Memoized filter for the list inside the modal
   const filteredStudents = useMemo(() => {
@@ -132,57 +138,66 @@ const BatchCarryModal = ({ pendingStudents, getFeeAmt, isOpen, onClose }) => {
       return;
     }
 
+    const selectedSet = new Set(selectedIds);
+
     // Map selected IDs back to full student objects to get fee amount and name
     const data = pendingStudents
-      .filter((s) => selectedIds.includes(s._id))
+      .filter((s) => selectedSet.has(s._id))
       .map((student) => ({
         student_id: student._id,
-        name: `${student.firstname} ${student.lastname}`, // Added for preview
+        name: `${student.firstname} ${student.lastname}`,
         remark: defaultRemark,
         amount: getFeeAmt(student.year),
       }));
 
-    setRequestsData(data);
+    // Guard against duplicate student IDs in the payload
+    const uniqueData = data.filter(
+      (request, index, arr) =>
+        index === arr.findIndex((item) => item.student_id === request.student_id)
+    );
+
+    setRequestsData(uniqueData);
     setIsConfirming(true); // Show the confirmation dialog
   };
 
   const handleConfirmSubmit = async () => {
-    // This is the final submission step
-    // console.log("Batch Carry Requests Data:", requestsData);
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    //updating in db
     try {
       const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Session expired. Please log in again.");
         return;
       }
+
       const payload = {
         requests: requestsData,
       };
-      const res = await axios.post(
-        `${backendUrl}/api/v1/multiplePaymentRequest`,
 
-        payload,
+      const res = await axios.post(`${backendUrl}/api/v1/multiplePaymentRequest`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // 🔐 Include JWT token
-          },
-        }
-      );
       if (res.data.success) {
         toast.success(res.data.message);
-        //await fetchPending();
+        if (onRefresh) {
+          await onRefresh();
+        }
       } else {
         toast.error(res.data.message || "Failed to create request");
       }
     } catch {
       toast.error("Error while creating a payment request");
+    } finally {
+      setIsSubmitting(false);
+      setIsConfirming(false);
+      setRequestsData([]);
+      setSelectedIds([]);
+      onClose();
     }
-
-    setIsConfirming(false); // Hide the confirmation dialog
-    onClose(); // Close the main modal
   };
   // ---------------------------------------------
 
@@ -282,6 +297,7 @@ const BatchCarryModal = ({ pendingStudents, getFeeAmt, isOpen, onClose }) => {
           defaultRemark={defaultRemark}
           onConfirm={handleConfirmSubmit}
           onCancel={() => setIsConfirming(false)}
+          isSubmitting={isSubmitting}
         />
       )}
     </div>

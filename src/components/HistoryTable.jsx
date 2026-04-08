@@ -7,7 +7,7 @@ import CarryRequest from "./CarryRequest";
 import BatchCarryModal from "./BatchCarryModal";
 import { start } from "@popperjs/core";
 
-const HistoryTable = ({ students, feeCard }) => {
+const HistoryTable = ({ students, feeCard, paymentRequests, onRefresh }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [remarks, setRemarks] = useState("");
@@ -27,6 +27,30 @@ const HistoryTable = ({ students, feeCard }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const studentsPerPage = 10;
 
+  const currentMonth = moment().month() + 1;
+  const currentYear = moment().year();
+
+  const currentMonthCarryIds = useMemo(() => {
+    const ids = new Set();
+    if (paymentRequests && Array.isArray(paymentRequests)) {
+      paymentRequests.forEach((request) => {
+        const remark = (request.remark || "").toLowerCase();
+        const currentRemark = `-${currentMonth}/${currentYear}`;
+
+        if (
+          remark.includes(`carried monthly fee${currentRemark}`) ||
+          remark.includes(`batch carried monthly${currentRemark}`) ||
+          remark.includes(`batch carried monthly fee${currentRemark}`)
+        ) {
+          ids.add(request.student_id._id || request.student_id);
+        }
+      });
+    }
+    return ids;
+  }, [paymentRequests, currentMonth, currentYear]);
+
+  const carriedCount = currentMonthCarryIds.size;
+
   //for setting month in the bypass modal for fee paid until
   const getNextMonth = () => {
     const current = new Date();
@@ -38,11 +62,20 @@ const HistoryTable = ({ students, feeCard }) => {
 
   const [feePaidUntil, setFeePaidUntil] = useState("");
 
+  const handleRefresh = async () => {
+    if (onRefresh) {
+      await onRefresh();
+    }
+  };
+
   const today = moment();
   const fifthOfMonth = moment().startOf("month").add(1, "days");
   //console.log("Fifth of month:", fifthOfMonth.format("YYYY-MM-DD"));
 
   const shouldShowBypass = (student) => {
+    if (currentMonthCarryIds.has(student._id)) {
+      return false;
+    }
     const today = moment();
     const startOfMonth = moment().startOf("month"); // 1st of current month
     ///const month = moment().add(2, "months").startOf("month");
@@ -100,6 +133,7 @@ const HistoryTable = ({ students, feeCard }) => {
       );
       if (res.data.success) {
         toast.success(res.data.message);
+        await handleRefresh();
         //await fetchPending();
       } else {
         toast.error(res.data.message || "Failed to create request");
@@ -167,6 +201,7 @@ const HistoryTable = ({ students, feeCard }) => {
       if (response.data.success) {
         toast.success("Payments collection updated");
         setShowModal(false);
+        await handleRefresh();
       } else {
         toast.error("Payments collection not updated");
       }
@@ -214,11 +249,11 @@ const HistoryTable = ({ students, feeCard }) => {
       if (aNeedsBypass === bNeedsBypass) return 0;
       return aNeedsBypass ? -1 : 1;
     });
-  }, [students, selectedYear, searchQuery]);
+  }, [students, selectedYear, searchQuery, currentMonthCarryIds]);
   // Memoized list of students pending for carry/bypass
   const pendingStudents = useMemo(() => {
     return students.filter(shouldShowBypass);
-  }, [students]);
+  }, [students, currentMonthCarryIds]);
   // 🔹 Pagination
   const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
   const paginatedStudents = filteredStudents.slice(
@@ -277,8 +312,17 @@ const HistoryTable = ({ students, feeCard }) => {
       {/* ✅ Paid / Pending Counts */}
       <div className="flex justify-center items-center gap-6 mb-4 text-sm sm:text-lg font-semibold">
         <div className="text-green-600">✅ Paid: {paid}</div>
+        <div className="text-blue-600"><i class="fa-solid fa-forward"></i>Carried: {carriedCount}</div>
         <div className="text-red-600">❌ Pending: {pending}</div>
         {/* 4. NEW Batch Carry Button */}
+        <button
+          onClick={handleRefresh}
+         
+         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition text-sm flex items-center gap-1"
+
+        >
+          🔄 Refresh
+        </button>
         <button
           onClick={() => setIsBatchModalOpen(true)}
           disabled={pendingStudents.length === 0}
@@ -339,33 +383,41 @@ const HistoryTable = ({ students, feeCard }) => {
                     <td className="p-2">{paymentMode}</td>
                     <td className="p-2">
                       <div className="flex flex-col sm:flex-row gap-2">
-                        {showBypass && (
-                          <button
-                            onClick={() =>
-                              openModal(
-                                student._id,
-                                student.firstname,
-                                student.lastname,
-                                student.year
-                              )
-                            }
-                            className="text-white bg-teal-500 hover:bg-teal-600 font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
-                          >
-                            Bypass
-                          </button>
-                        )}
+                        {currentMonthCarryIds.has(student._id) ? (
+                          <span className="text-green-600 font-medium text-xs sm:text-sm px-3 py-1.5">
+                            Fees Carried
+                          </span>
+                        ) : (
+                          <>
+                            {showBypass && (
+                              <button
+                                onClick={() =>
+                                  openModal(
+                                    student._id,
+                                    student.firstname,
+                                    student.lastname,
+                                    student.year
+                                  )
+                                }
+                                className="text-white bg-teal-500 hover:bg-teal-600 font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
+                              >
+                                Bypass
+                              </button>
+                            )}
 
-                        {showBypass && (
-                          <button
-                            onClick={() => {
-                              setSelectedAmount(getFeeAmt(student.year));
-                              setSelectedStudent(student);
-                              setIsModalOpen(true);
-                            }}
-                            className="text-white bg-yellow-500 hover:bg-yellow-600 font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
-                          >
-                            Carry
-                          </button>
+                            {showBypass && (
+                              <button
+                                onClick={() => {
+                                  setSelectedAmount(getFeeAmt(student.year));
+                                  setSelectedStudent(student);
+                                  setIsModalOpen(true);
+                                }}
+                                className="text-white bg-yellow-500 hover:bg-yellow-600 font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
+                              >
+                                Carry
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
@@ -482,7 +534,7 @@ const HistoryTable = ({ students, feeCard }) => {
           getFeeAmt={getFeeAmt}
           isOpen={isBatchModalOpen}
           onClose={() => setIsBatchModalOpen(false)}
-          //onSubmit={handleModalSubmit} // Use the same submit handler (modified to handle batch)
+          onRefresh={handleRefresh}
         />
       )}
     </div>
