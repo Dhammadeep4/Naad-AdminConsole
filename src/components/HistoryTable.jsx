@@ -310,23 +310,23 @@ const HistoryTable = ({ students, feeCard, paymentRequests, onRefresh }) => {
       </div>
 
       {/* ✅ Paid / Pending Counts */}
-      <div className="flex justify-center items-center gap-6 mb-4 text-sm sm:text-lg font-semibold">
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4 mb-4 text-xs sm:text-lg font-semibold flex-wrap">
         <div className="text-green-600">✅ Paid: {paid}</div>
-        <div className="text-blue-600"><i class="fa-solid fa-forward"></i>Carried: {carriedCount}</div>
+        <div className="text-yellow-500 flex items-center gap-1">
+          <i className="fa-solid fa-forward"></i>Carried: {carriedCount}
+        </div>
         <div className="text-red-600">❌ Pending: {pending}</div>
         {/* 4. NEW Batch Carry Button */}
         <button
           onClick={handleRefresh}
-         
-         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition text-sm flex items-center gap-1"
-
+          className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition text-xs sm:text-sm flex items-center gap-1 whitespace-nowrap"
         >
           🔄 Refresh
         </button>
         <button
           onClick={() => setIsBatchModalOpen(true)}
           disabled={pendingStudents.length === 0}
-          className={`px-4 py-2 rounded-lg font-medium transition text-sm md:text-base whitespace-nowrap ${
+          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-medium transition text-xs sm:text-sm whitespace-nowrap ${
             pendingStudents.length > 0
               ? "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
               : "bg-gray-400 text-gray-700 cursor-not-allowed"
