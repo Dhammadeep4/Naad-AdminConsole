@@ -189,29 +189,37 @@ const PendingRequestsTable = ({ paymentRequests, students, onDelete, onRefresh }
                     {new Date(request.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-2 sm:px-4 py-2 border-b whitespace-nowrap">
-                    <button
-                      className="text-white bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 hover:bg-gradient-to-br font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition"
-                      onClick={() =>
-                        openModal(
-                          request.student_id._id,
-                          request.student_id.firstname,
-                          request.student_id.lastname,
-                          request.amount,
-                          request.remark
-                        )
-                      }
-                    >
-                      Bypass
-                    </button>
-                    {/* --- DELETE BUTTON --- */}
-                      <button
-                        onClick={() => handleDelete(request._id)}
-                        className="text-red-600 hover:text-white border border-red-600 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-xs px-3 py-1.5 text-center transition"
-                        title="Delete Request"
-                      >
-                        <FaTrash />
-                      </button>
-                  </td>
+  {/* Flex container adds the gap and aligns buttons vertically */}
+  <div className="flex items-center gap-3">
+    
+    {/* Bypass Button */}
+    <button
+      className="text-white bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 hover:bg-gradient-to-br font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition w-24 sm:w-28 shadow-sm"
+      onClick={() =>
+        openModal(
+          request.student_id._id,
+          request.student_id.firstname,
+          request.student_id.lastname,
+          request.amount,
+          request.remark
+        )
+      }
+    >
+      Bypass
+    </button>
+
+    {/* Delete Button - Styled to match Bypass size */}
+    <button
+      onClick={() => handleDelete(request._id)}
+      className="flex items-center justify-center gap-2 text-red-600 bg-red-50 border border-red-200 hover:bg-red-600 hover:text-white font-medium rounded-lg text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 transition w-24 sm:w-28 shadow-sm group"
+      title="Delete Request"
+    >
+      <FaTrash className="text-sm group-hover:scale-110 transition-transform" />
+      <span>Delete</span>
+    </button>
+    
+  </div>
+</td>
                 </tr>
               ))}
             </tbody>
