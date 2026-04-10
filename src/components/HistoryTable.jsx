@@ -53,12 +53,16 @@ const HistoryTable = ({ students, feeCard, paymentRequests, onRefresh }) => {
 
   //for setting month in the bypass modal for fee paid until
   const getNextMonth = () => {
-    const current = new Date();
-    current.setMonth(current.getMonth() + 1); // move to next month
-    const year = current.getFullYear();
-    const month = String(current.getMonth() + 1).padStart(2, "0");
-    return `${year}-${month}`; // format: YYYY-MM
-  };
+  const now = new Date();
+  // Create a new date object for the 1st of the next month
+  // This avoids the "31st day" overflow issue
+  const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  
+  const year = nextMonthDate.getFullYear();
+  const month = String(nextMonthDate.getMonth() + 1).padStart(2, "0");
+  
+  return `${year}-${month}`; // Returns "2026-04" if today is March 31
+};
 
   const [feePaidUntil, setFeePaidUntil] = useState("");
 
@@ -73,37 +77,26 @@ const HistoryTable = ({ students, feeCard, paymentRequests, onRefresh }) => {
   //console.log("Fifth of month:", fifthOfMonth.format("YYYY-MM-DD"));
 
   const shouldShowBypass = (student) => {
-    if (currentMonthCarryIds.has(student._id)) {
-      return false;
-    }
-    const today = moment();
-    const startOfMonth = moment().startOf("month"); // 1st of current month
-    ///const month = moment().add(2, "months").startOf("month");
-    const lastPaymentDate = student?.lastPayment?.createdAt
-      ? moment(student.lastPayment.createdAt)
-      : null;
+  if (currentMonthCarryIds.has(student._id)) {
+    return false;
+  }
 
-    const feeUntil = student?.feePaidUntil
-      ? moment(student.feePaidUntil)
-      : null;
+  const startOfCurrentMonth = moment().startOf("month"); // e.g., April 1st
+  const feeUntil = student?.feePaidUntil ? moment(student.feePaidUntil) : null;
 
-    // Condition 1: no last payment or before 5th
-    const paymentPending =
-      !lastPaymentDate || lastPaymentDate.isBefore(fifthOfMonth, "day");
+  // CHANGE THIS LINE:
+  // If feeUntil is April 1st and startOfCurrentMonth is April 1st, 
+  // isSameOrBefore will be TRUE, so the Bypass button WILL show up in April.
+  const feePending = !feeUntil || feeUntil.isSameOrBefore(startOfCurrentMonth, "day");
 
-    // Condition 2: feePaidUntil missing or before current month
-    const feePending =
-      !feeUntil || feeUntil.isSameOrBefore(startOfMonth, "day");
-    if (feeUntil) {
-      //  console.log("Fee paid until:", feeUntil.format("YYYY-MM-DD"));
-      // console.log("Month being checked:", startOfMonth.format("YYYY-MM-DD"));
-      // console.log("Is fee pending?", feePending);
-      return feePending;
-    }
+  if (feeUntil) {
+    return feePending;
+  }
 
-    return paymentPending;
-  };
-
+  // Fallback for lastPayment logic
+  const lastPaymentDate = student?.lastPayment?.createdAt ? moment(student.lastPayment.createdAt) : null;
+  return !lastPaymentDate || lastPaymentDate.isBefore(fifthOfMonth, "day");
+};
   const getFeeAmt = (year) => {
     var y = year.toLowerCase();
     y = y.replace(/ /g, "_");
@@ -180,6 +173,15 @@ const HistoryTable = ({ students, feeCard, paymentRequests, onRefresh }) => {
       // update DB
 
       const currentDate = new Date().toLocaleDateString();
+      
+      //logging payload
+      // console.log(`student_id: ${id},
+      //     payment_id: ${remarks},
+      //     mode: "Cash",
+      //     remark: ${remarks},
+      //     amount: ${amount},
+      //     feePaidUntil: ${feePaidUntil + "-01"},`);
+
       // console.log("FeePaidUntil:", feePaidUntil + "-01");
       const response = await axios.post(
         `${backendUrl}/api/v1/updateDB`,
@@ -357,9 +359,12 @@ const HistoryTable = ({ students, feeCard, paymentRequests, onRefresh }) => {
                   student.middlename || ""
                 } ${student.lastname}`;
                 const showBypass = shouldShowBypass(student);
-                const paymentDate = showBypass
-                  ? "—"
-                  : moment(student.lastPayment?.createdAt).format("YYYY-MM-DD");
+                const paymentDate = student.lastPayment
+                  ? moment(
+                      student.lastPayment.updatedAt ||
+                        student.lastPayment.createdAt
+                    ).format("YYYY-MM-DD")
+                  : "—";
                 const feePaidUntil = student.feePaidUntil
                   ? moment(student.feePaidUntil).format("YYYY-MM-DD")
                   : "—";
